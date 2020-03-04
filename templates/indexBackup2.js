@@ -1,12 +1,11 @@
 const inquirer = require("inquirer");
 const fs = require("fs");
 const util = require("util");
-
 const writeFileAsync = util.promisify(fs.writeFile);
-
+let data = [];
+var HTML = "";
 function promptUser() {
     return inquirer.prompt([
-        //Manager
         {
             type: "input",
             name: "managerName",
@@ -15,50 +14,75 @@ function promptUser() {
         {
             type: "input",
             name: "managerId",
-            message: "What's his ID?"
+            message: "What's the manager's ID?"
         },
         {
             type: "input",
             name: "managerEmail",
-            message: "What's his email?"
+            message: "What's the manager's email?"
         },
         {
             type: "input",
             name: "managerJobTitle",
-            message: "What's his exact job title?"
+            message: "What's the manager's exact job title?"
         },
         {
             type: "input",
             name: "officeNumber",
-            message: "What's his Office Number?"
+            message: "What's the manager's Office Number?"
         },
-        //Engineer
-        {
-            type: "input",
-            name: "engineerName",
-            message: "Enter the name and last name of the engineer?"
-        },
-        {
-            type: "input",
-            name: "engineerId",
-            message: "What's his ID?"
-        },
-        {
-            type: "input",
-            name: "engineerEmail",
-            message: "What's his email?"
-        },
-        {
-            type: "input",
-            name: "engineerJobTitle",
-            message: "What's his exact job title?"
-        },
-        {
-            type: "input",
-            name: "githubUsername",
-            message: "Add his GitHub username"
-        },
-        //Intern
+    ]);
+}
+function addEngineer() {
+    return inquirer.prompt(
+        [
+            {
+                type: "input",
+                name: "engineerName",
+                message: "Enter the name and last name of the engineer?"
+            },
+            {
+                type: "input",
+                name: "engineerId",
+                message: "What's his ID?"
+            },
+            {
+                type: "input",
+                name: "engineerEmail",
+                message: "What's his email?"
+            },
+            {
+                type: "input",
+                name: "engineerJobTitle",
+                message: "What's his exact job title?"
+            },
+            {
+                type: "input",
+                name: "githubUsername",
+                message: "Add his GitHub username"
+            },
+        ]
+    ).then(function (ans) {
+        const htmlEngineer = `<div class="col-md-4 engineer">
+        <div class="cardHeader">
+            <h4>${ans.engineerName}</h4>
+            <h4>${ans.engineerJobTitle}</h4>
+        </div>
+        <div class="cardBody">
+            <p class="line">${ans.engineerId}</p>
+            <p class="line">${ans.engineerEmail}</p>
+            <p class="line">${ans.githubUsername}</p>
+        </div>
+    </div>`
+   
+    data.push(htmlEngineer)
+    menuChoice(ans)
+  
+    })
+}
+
+function addIntern() {
+    return inquirer.prompt([
         {
             type: "input",
             name: "internName",
@@ -84,11 +108,54 @@ function promptUser() {
             name: "school",
             message: "What school is he currently studing?"
         }
-    ]);
+    ]).then(function (ans) {
+        const htmlIntern = `<div class="col-md-4 intern">
+            <div class="cardHeader">
+                <h4>${ans.internName}</h4>
+                <h4>${ans.internJobTitle}</h4>
+            </div>
+            <div class="cardBody">
+                <p class="line">${ans.internId}</p>
+                <p class="line">${ans.internEmail}</p>
+                <p class="line">${ans.school}</p>
+            </div>
+            </div>`
+ 
+        data.push(htmlIntern)
+        menuChoice(ans)
+    })
 }
+function menuChoice() {
+    inquirer.prompt({
+        type: 'list',
+        message: 'What do you want to do?',
+        choices: ['Add Engineer', "Add Intern", 'Generate Page'],
+        name: 'choice'
+    }).then(function (menA) {
+        switch (menA.choice) {
+            case 'Add Engineer':
+                addEngineer()
+                break;
+            case 'Add Intern':
+                addIntern()
+                break;
+            case 'Generate Page':
+                generateHTML()
+                break;
+        }
+    })
+}
+promptUser()
+    .then(function (ans) {
+        menuChoice(ans)
+    })
+    .then(function generateHTML() {
+    })
+
+    console.log(data)
 
 function generateHTML(answers) {
-    return`<!DOCTYPE html>
+    HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -117,26 +184,7 @@ function generateHTML(answers) {
                         <p class="line">${answers.officeNumber}</p>
                     </div>
                 </div>
-                <div class="col-md-4 engineer">
-                    <div class="cardHeader">
-                        <h4>${answers.engineerName}</h4>
-                        <h4>${answers.engineerJobTitle}</h4>
-                    </div>
-                    <div class="cardBody">
-                        <p class="line">${answers.engineerId}</p>
-                        <p class="line">${answers.engineerEmail}</p>
-                        <p class="line">${answers.githubUsername}</p>
-                    </div>
-                </div>
-                <div class="col-md-4 intern">
-                    <div class="cardHeader">
-                        <h4>${answers.internName}</h4>
-                        <h4>${answers.internJobTitle}</h4>
-                    </div>
-                    <div class="cardBody">
-                        <p class="line">${answers.internId}</p>
-                        <p class="line">${answers.internEmail}</p>
-                        <p class="line">${answers.school}</p>
+                ${data.join("")}
                     </div>
                 </div>
             </div>
@@ -184,20 +232,20 @@ function generateHTML(answers) {
         }
         p {
         margin: 0;
-        }     
+        }
     </style>
 </body>
 </html>`;
+
+fs.writeFile("index.html", HTML, function (err) {
+
+    if (err) {
+        return console.log(err);
+    }
+
+    console.log("Success!");
+
+});
+
 }
 
-promptUser()
-    .then(function (answers) {
-        const html = generateHTML(answers);
-        return writeFileAsync("indexTest.html", html);
-    })
-    .then(function () {
-        console.log("Successfully wrote to indexTest.html");
-    })
-    .catch(function (err) {
-        console.log(err);
-    });
