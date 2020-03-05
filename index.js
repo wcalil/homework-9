@@ -1,7 +1,6 @@
 const inquirer = require("inquirer");
 const fs = require("fs");
-const util = require("util");
-const writeFileAsync = util.promisify(fs.writeFile);
+const axios = require("axios");
 let data = [];
 var HTML = "";
 function promptUser() {
@@ -9,7 +8,7 @@ function promptUser() {
         {
             type: "input",
             name: "managerName",
-            message: "What's the first and last name of the manager of the team?"
+            message: "What's the manager's first and last name?"
         },
         {
             type: "input",
@@ -34,13 +33,13 @@ function promptUser() {
     ]).then(function (ans) {
         const HTMLManager = `<div class="col-md-4 manager">
         <div class="cardHeader">
-            <h4>${ans.managerName}</h4>
+            <h4>Manager: ${ans.managerName}</h4>
             <h4>${ans.managerJobTitle}</h4>
         </div>
         <div class="cardBody">
-            <p class="line">${ans.managerId}</p>
-            <p class="line">${ans.managerEmail}</p>
-            <p class="line">${ans.officeNumber}</p>
+            <p class="line">ID: ${ans.managerId}</p>
+            <p class="line">Email: ${ans.managerEmail}</p>
+            <p class="line">Office Number${ans.officeNumber}</p>
         </div>
     </div>`
 
@@ -62,11 +61,6 @@ function addEngineer() {
             },
             {
                 type: "input",
-                name: "engineerEmail",
-                message: "What's his email?"
-            },
-            {
-                type: "input",
                 name: "engineerJobTitle",
                 message: "What's his exact job title?"
             },
@@ -76,22 +70,27 @@ function addEngineer() {
                 message: "Add his GitHub username"
             },
         ]
+
     ).then(function (ans) {
-        const htmlEngineer = `<div class="col-md-4 engineer">
+        var queryUrl = `https://api.github.com/users/${ans.githubUsername}`
+        var engineerName = ans.engineerName
+        var engineerJobTitle = ans.engineerJobTitle
+        var engineerId = ans.engineerId
+        axios.get(queryUrl).then(function (ans) {
+            const htmlEngineer = `<div class="col-md-4 engineer">
         <div class="cardHeader">
-            <h4>${ans.engineerName}</h4>
-            <h4>${ans.engineerJobTitle}</h4>
+            <h4>Engineer: ${engineerName}</h4>
+            <h4>${engineerJobTitle}</h4>
         </div>
         <div class="cardBody">
-            <p class="line">${ans.engineerId}</p>
-            <p class="line">${ans.engineerEmail}</p>
-            <p class="line">${ans.githubUsername}</p>
+            <p class="line">ID: ${engineerId}</p>
+            <p class="line">Github URL: ${ans.data.url}</p>
+            <p class="line">${ans.data.email}</p>
         </div>
     </div>`
-
-        data.push(htmlEngineer)
-        menuChoice(ans)
-
+            data.push(htmlEngineer)
+            menuChoice(ans)
+        })
     })
 }
 
@@ -125,13 +124,13 @@ function addIntern() {
     ]).then(function (ans) {
         const htmlIntern = `<div class="col-md-4 intern">
             <div class="cardHeader">
-                <h4>${ans.internName}</h4>
+                <h4>Intern: ${ans.internName}</h4>
                 <h4>${ans.internJobTitle}</h4>
             </div>
             <div class="cardBody">
-                <p class="line">${ans.internId}</p>
-                <p class="line">${ans.internEmail}</p>
-                <p class="line">${ans.school}</p>
+                <p class="line">ID: ${ans.internId}</p>
+                <p class="line">Email: ${ans.internEmail}</p>
+                <p class="line">School: ${ans.school}</p>
             </div>
             </div>`
 
@@ -165,8 +164,6 @@ promptUser()
     })
     .then(function generateHTML() {
     })
-
-console.log(data)
 
 function generateHTML(answers) {
     HTML = `<!DOCTYPE html>
@@ -228,10 +225,11 @@ function generateHTML(answers) {
             border-radius:0px 0px 5px 5px;
         }
         .line {
-            height: 40px;
+            height: 60px;
             border-bottom: solid;
             border-color: gray;
             padding: 0;
+            font-weight: bold;
         }
         p {
         margin: 0;
